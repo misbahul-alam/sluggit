@@ -1,9 +1,9 @@
-export interface SluggyOptions {
+export interface SluggitOptions {
   separator?: string;
   lowercase?: boolean;
 }
 
-export function sluggy(text: string, options: SluggyOptions = {}): string {
+export function sluggit(text: string, options: SluggitOptions = {}): string {
   const separator = options.separator ?? "-";
   const lowercase = options.lowercase ?? true;
 
