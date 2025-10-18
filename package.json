@@ -1,0 +1,32 @@
+{
+  "name": "sluggy",
+  "version": "1.0.0",
+  "description": "A utility for generating slugs from text strings in TypeScript.",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "prepare": "npm run build",
+    "test": "jest"
+  },
+  "keywords": [
+    "slug",
+    "slugify",
+    "text",
+    "string",
+    "typescript"
+  ],
+  "author": "Misbahul Alam",
+  "license": "MIT",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.8.1",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.5",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  }
+}
