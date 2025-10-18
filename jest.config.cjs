@@ -1,10 +1,8 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
+// jest.config.cjs
 module.exports = {
-  preset: "ts-jest",
   testEnvironment: "node",
   transform: {
     "^.+\\.ts$": "ts-jest",
   },
-  moduleFileExtensions: ["ts", "js"],
   testMatch: ["**/test/**/*.test.ts"],
 };
