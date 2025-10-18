@@ -1,6 +1,6 @@
 {
   "name": "sluggit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A utility for generating slugs from text strings in TypeScript.",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -19,7 +19,7 @@
   ],
   "author": "Misbahul Alam",
   "license": "MIT",
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^24.8.1",
