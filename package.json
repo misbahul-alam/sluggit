@@ -1,14 +1,19 @@
 {
   "name": "sluggit",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A utility for generating slugs from text strings in TypeScript.",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": {
+    "url": "https://github.com/misbahul-alam/sluggit",
+    "type": "git"
+  },
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "prepare": "npm run build",
-    "test": "jest"
+    "test": "jest",
+    "test:watch": "jest --watchAll"
   },
   "keywords": [
     "slug",
@@ -22,11 +27,11 @@
   "type": "module",
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.8.1",
+    "@types/node": "^24.10.1",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
-    "tsup": "^8.5.0",
+    "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   }
 }

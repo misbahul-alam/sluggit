@@ -39,8 +39,14 @@ This release refactors the codebase into small modules and introduces new option
 ## Installation
 
 ```bash
-# NPM
+# npm
 npm install sluggit
+
+# yarn
+yarn add sluggit
+
+# pnpm
+pnpm add sluggit
 ```
 
 ---
@@ -130,12 +136,12 @@ interface SluggitOptions {
 
 Here are some example inputs and their corresponding outputs:
 
-| Input                   | Options                                         | Output                       |
-| ----------------------- | ----------------------------------------------- | ---------------------------- |
-| "Hello World!"          | default                                         | "hello-world"                |
-| "Hello_World!"          | { separator: '\_' }                             | "hello_world"                |
-| "Hello World!"          | { lowercase: false }                            | "Hello-World"                |
-| " Hello World! "        | { trim: true }                                  | "hello-world"                |
-| "Café & Résumé"         | default                                         | "cafe-and-resume"            |
-| "Hello 👋 World! 🌍"    | default                                         | "hello-world"                |
-| "Product™ & Copyright©" | { customReplacements: { "™": "tm", "©": "c" } } | "product-tm-and-copyright-c" |
+| Input                   | Options                                        | Output                       |
+| ----------------------- | ---------------------------------------------- | ---------------------------- |
+| "Hello World!"          | default                                        | "hello-world"                |
+| "Hello_World!"          | { separator: '\_' }                            | "hello_world"                |
+| "Hello World!"          | { lowercase: false }                           | "Hello-World"                |
+| " Hello World! "        | { trim: true }                                 | "hello-world"                |
+| "Café & Résumé"         | { customReplacements: { "&": "and" }}          | "cafe-and-resume"            |
+| "Hello 👋 World! 🌍"    | default                                        | "hello-world"                |
+| "Product™ & Copyright©" | { customReplacements: { "™": "tm", "©": "c" }} | "product-tm-and-copyright-c" |

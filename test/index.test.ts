@@ -10,8 +10,18 @@ describe("Sluggit Utility Tests", () => {
       expect(sluggit("Sluggy 😎 Test")).toBe("sluggy-test");
     });
 
+    test("handles multiple emojis", () => {
+      expect(sluggit("Hello 👋 World! 🌍")).toBe("hello-world");
+    });
+
     test("normalizes accented characters", () => {
       expect(sluggit("Café du Monde")).toBe("cafe-du-monde");
+    });
+
+    test("handles ampersand and accented characters", () => {
+      expect(
+        sluggit("Café & Résumé", { customReplacements: { "&": "and" } })
+      ).toBe("cafe-and-resume");
     });
 
     test("allows custom separator", () => {
