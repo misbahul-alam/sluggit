@@ -1,11 +1,5 @@
-import type { CustomReplacements } from "./replacements";
-import { defaultReplacements, transliterations } from "./replacements";
-import {
-  escapeRegex,
-  collapseSeparators,
-  hasLetterOrNumber,
-  applyReplacements,
-} from "./utils";
+import type { CustomReplacements } from "./replacements.js";
+import { defaultReplacements, transliterations } from "./replacements.js";
 
 export interface SluggitOptions {
   separator?: string;
@@ -16,8 +10,6 @@ export interface SluggitOptions {
   preserveNumbers?: boolean;
   removeTrailingDash?: boolean;
 }
-
-// replacement maps moved to src/replacements.ts
 
 /**
  * Convert a string to a URL-friendly slug
@@ -35,6 +27,7 @@ export function sluggit(text: string, options: SluggitOptions = {}): string {
     preserveNumbers = true,
     removeTrailingDash = false,
   } = options;
+  const hasSeparator = separator.length > 0;
 
   const replacements = {
     ...defaultReplacements,
@@ -46,7 +39,11 @@ export function sluggit(text: string, options: SluggitOptions = {}): string {
 
   const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-  Object.entries(replacements)
+  const replacementEntries = Object.entries(replacements) as Array<
+    [string, string]
+  >;
+
+  replacementEntries
     .sort((a, b) => b[0].length - a[0].length)
     .forEach(([key, value]) => {
       const pattern = escapeRegex(key);
@@ -84,21 +81,29 @@ export function sluggit(text: string, options: SluggitOptions = {}): string {
   const alphanumericPattern = preserveNumbers ? "[^a-zA-Z0-9]" : "[^a-zA-Z]";
   slug = slug.replace(new RegExp(alphanumericPattern + "+", "g"), separator);
 
-  if (trim) {
-    slug = slug.replace(new RegExp(`^${separator}+|${separator}+$`, "g"), "");
+  if (trim && hasSeparator) {
+    slug = slug.replace(
+      new RegExp(
+        `^${escapeRegex(separator)}+|${escapeRegex(separator)}+$`,
+        "g",
+      ),
+      "",
+    );
   }
 
   if (lowercase) {
     slug = slug.toLowerCase();
   }
 
-  if (removeTrailingDash) {
-    slug = slug.replace(new RegExp(`${separator}+$`), "");
+  if (removeTrailingDash && hasSeparator) {
+    slug = slug.replace(new RegExp(`${escapeRegex(separator)}+$`), "");
   }
 
   if (maxLength && slug.length > maxLength) {
     const original = slug;
-    const parts = original.split(separator).filter(Boolean);
+    const parts = hasSeparator
+      ? original.split(separator).filter(Boolean)
+      : [original];
     let built: string = "";
     for (const part of parts) {
       const candidate = built ? `${built}${separator}${part}` : part;
@@ -110,14 +115,15 @@ export function sluggit(text: string, options: SluggitOptions = {}): string {
     }
 
     if (!built) {
-      built = original
-        .substring(0, maxLength)
-        .replace(new RegExp(`${escapeRegex(separator)}+$`), "");
+      built = original.substring(0, maxLength);
+      if (hasSeparator) {
+        built = built.replace(new RegExp(`${escapeRegex(separator)}+$`), "");
+      }
     }
 
-    const numericTailMatch = original.match(
-      new RegExp(`${escapeRegex(separator)}(\\d+)$`)
-    );
+    const numericTailMatch = hasSeparator
+      ? original.match(new RegExp(`${escapeRegex(separator)}(\\d+)$`))
+      : null;
     if (numericTailMatch) {
       const tail = numericTailMatch[1];
       const partsList = original.split(separator).filter(Boolean);
@@ -139,10 +145,12 @@ export function sluggit(text: string, options: SluggitOptions = {}): string {
     slug = built;
   }
 
-  slug = slug.replace(
-    new RegExp(`${escapeRegex(separator)}{2,}`, "g"),
-    separator
-  );
+  if (hasSeparator) {
+    slug = slug.replace(
+      new RegExp(`${escapeRegex(separator)}{2,}`, "g"),
+      separator,
+    );
+  }
 
   if (!/[\p{L}\p{N}]/u.test(slug)) return "";
 

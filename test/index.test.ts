@@ -1,4 +1,5 @@
-import { sluggit } from "../src/index";
+import { describe, expect, test } from "vitest";
+import { sluggit } from "../src/index.js";
 
 describe("Sluggit Utility Tests", () => {
   describe("Basic Functionality", () => {
@@ -20,7 +21,7 @@ describe("Sluggit Utility Tests", () => {
 
     test("handles ampersand and accented characters", () => {
       expect(
-        sluggit("Café & Résumé", { customReplacements: { "&": "and" } })
+        sluggit("Café & Résumé", { customReplacements: { "&": "and" } }),
       ).toBe("cafe-and-resume");
     });
 
@@ -40,13 +41,33 @@ describe("Sluggit Utility Tests", () => {
 
     test("keeps leading and trailing separators when trim is false", () => {
       expect(sluggit("  Hello  World  ", { trim: false })).toBe(
-        "-hello-world-"
+        "-hello-world-",
       );
     });
 
     test("removes trailing dash when removeTrailingDash is true", () => {
       expect(sluggit("Hello World - ", { removeTrailingDash: true })).toBe(
-        "hello-world"
+        "hello-world",
+      );
+    });
+
+    test("supports dot separator without erasing output", () => {
+      expect(sluggit("Hello World", { separator: "." })).toBe("hello.world");
+    });
+
+    test("supports dot separator with removeTrailingDash", () => {
+      expect(sluggit("abc", { separator: ".", removeTrailingDash: true })).toBe(
+        "abc",
+      );
+    });
+
+    test("supports empty separator without throwing", () => {
+      expect(sluggit("Hello World", { separator: "" })).toBe("helloworld");
+    });
+
+    test("supports empty separator with removeTrailingDash", () => {
+      expect(sluggit("abc", { separator: "", removeTrailingDash: true })).toBe(
+        "abc",
       );
     });
   });
@@ -54,14 +75,20 @@ describe("Sluggit Utility Tests", () => {
   describe("Length Limiting", () => {
     test("respects maxLength while keeping word boundaries", () => {
       expect(sluggit("The Quick Brown Fox", { maxLength: 10 })).toBe(
-        "the-quick"
+        "the-quick",
       );
     });
 
     test("handles maxLength with custom separator", () => {
       expect(
-        sluggit("The Quick Brown Fox", { maxLength: 10, separator: "_" })
+        sluggit("The Quick Brown Fox", { maxLength: 10, separator: "_" }),
       ).toBe("the_quick");
+    });
+
+    test("handles maxLength with empty separator without throwing", () => {
+      expect(sluggit("Hello World", { separator: "", maxLength: 5 })).toBe(
+        "hello",
+      );
     });
   });
 
@@ -73,7 +100,7 @@ describe("Sluggit Utility Tests", () => {
             "&": "and",
             "@": "at",
           },
-        })
+        }),
       ).toBe("hello-and-world-at-2023");
     });
 
@@ -85,7 +112,7 @@ describe("Sluggit Utility Tests", () => {
             "©": "c",
             "&": "and",
           },
-        })
+        }),
       ).toBe("product-tm-and-copyright-c");
     });
   });
@@ -97,7 +124,7 @@ describe("Sluggit Utility Tests", () => {
 
     test("removes numbers when preserveNumbers is false", () => {
       expect(sluggit("Hello 123 World", { preserveNumbers: false })).toBe(
-        "hello-world"
+        "hello-world",
       );
     });
   });
@@ -149,7 +176,7 @@ describe("Sluggit Utility Tests", () => {
             "&": "and",
             "©": "c",
           },
-        })
+        }),
       ).toBe("Hello_and_World");
     });
 
@@ -165,7 +192,7 @@ describe("Sluggit Utility Tests", () => {
           },
           preserveNumbers: true,
           removeTrailingDash: true,
-        })
+        }),
       ).toBe("cafe-and-resume-c-2023");
     });
   });

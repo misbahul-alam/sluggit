@@ -2,5 +2,6 @@ src/
 test/
 .github/
 .vscode/
-.jest.config.js
 tsconfig.json
+vitest.config.ts
+tsup.config.ts

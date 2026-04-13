@@ -1,4 +1,4 @@
-import type { CustomReplacements } from "./replacements";
+import type { CustomReplacements } from "./replacements.js";
 
 export const escapeRegex = (s: string) =>
   s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -14,7 +14,7 @@ export function hasLetterOrNumber(str: string) {
 export function applyReplacements(
   input: string,
   replacements: CustomReplacements,
-  separator: string
+  separator: string,
 ): string {
   let out = input;
   const keys = Object.keys(replacements).sort((a, b) => b.length - a.length);
@@ -36,7 +36,6 @@ export function applyReplacements(
         const afterIsAlnum = /[\p{L}\p{N}]/u.test(after);
         const beforeIsSpace = /\s/.test(before);
         const afterIsSpace = /\s/.test(after);
-        // If symbol sits between non-alnum non-space characters, drop it.
         if (!beforeIsAlnum && !afterIsAlnum && !beforeIsSpace && !afterIsSpace)
           return "";
         const left = beforeIsAlnum || beforeIsSpace ? separator : "";
