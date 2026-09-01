@@ -4,35 +4,40 @@
 [![downloads](https://img.shields.io/npm/dt/sluggit.svg)](https://www.npmjs.com/package/sluggit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Sluggit is a lightweight TypeScript utility to convert strings into URL-friendly slugs. Removes emojis, accents, and special characters, supports custom separators, and preserves casing if needed.
+**Sluggit** is a high-performance, lightweight TypeScript utility for converting text strings into clean, URL-friendly slugs. It handles Unicode, accents, emojis, currencies, math symbols, locale transliterations, and unique collision resolution with zero runtime dependencies.
 
-This release refactors the codebase into small modules and introduces new options:
-
-- maxLength: limit the length of the generated slug while preserving word boundaries when possible
-- customReplacements: provide a mapping of characters/strings to replace before slugification
-- preserveNumbers: whether numbers should be kept in the slug (default: true)
-- removeTrailingDash: when true, removes any trailing separators from the final slug
+---
 
 ## Table of Contents
 
-| Section                         | Description                             |
-| ------------------------------- | --------------------------------------- |
-| [Features](#features)           | Key functionality of the package        |
-| [Installation](#installation)   | How to install using NPM, Yarn, or PNPM |
-| [Quick Start](#quick-start)     | Minimal example to start using Sluggit  |
-| [Usage](#usage)                 | Full usage examples                     |
-| [API Reference](#api-reference) | Function signature and parameters       |
-| [Options](#options)             | Available options and default values    |
-| [Examples](#examples)           | Example inputs and expected outputs     |
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Usage & Examples](#usage--examples)
+  - [Basic Usage](#basic-usage)
+  - [Unique Slug Generator](#unique-slug-generator-cms--database)
+  - [Allowed Characters Whitelist](#allowed-characters-whitelist-paths--files)
+  - [Locale Support (Umlauts & Accents)](#locale-support-umlauts--accents)
+  - [Currency & Math Symbols](#currency--math-symbols)
+  - [Length Limiting (Word-Boundary Aware)](#length-limiting-word-boundary-aware)
+  - [Custom Replacements](#custom-replacements)
+- [API Reference](#api-reference)
+- [Options Reference](#options-reference)
+- [License](#license)
+
+---
 
 ## Features
 
-- Convert any string to a **URL-friendly slug**
-- Remove **special characters, emojis, and accents**
-- Customizable **separator** (`-`, `_`, or any character)
-- Optional **lowercase / uppercase**
-- Supports **ESM and CommonJS**
-- TypeScript-ready with **type definitions**
+- 🚀 **Blazing Fast**: Pre-compiled and cached static transliteration tables for maximum performance.
+- 🌐 **Full Unicode & Emoji Handling**: Strips emojis, normalizes diacritics, and transliterates Cyrillic/Greek symbols.
+- 🔢 **Unique Slug Generator**: Built-in `uniqueSlug` helper to automatically handle slug collisions for CMSs and databases.
+- 🌍 **Locale-Aware Transliterations**: Special expansions for German (`de`), Scandinavian (`da`, `sv`, `nb`, `nn`), Turkish (`tr`), and more.
+- 💱 **Currency & Symbol Transliteration**: Automatic conversions for `$`, `€`, `£`, `¥`, `₹`, `%`, `+`, `@`, `&`, etc.
+- 🛡️ **Whitelist Characters (`allowedChars`)**: Preserve specific characters like `/` for paths or `.` for file names.
+- 📦 **Dual ESM & CommonJS**: Supports `import sluggit from "sluggit"`, `import { sluggit, uniqueSlug } from "sluggit"`, and `require("sluggit")`.
+- 🏷️ **TypeScript Ready**: Full type definitions and JSDoc annotations out of the box.
+- 🪶 **Zero Dependencies**: Pure, lightweight code.
 
 ---
 
@@ -42,11 +47,14 @@ This release refactors the codebase into small modules and introduces new option
 # npm
 npm install sluggit
 
+# pnpm
+pnpm add sluggit
+
 # yarn
 yarn add sluggit
 
-# pnpm
-pnpm add sluggit
+# bun
+bun add sluggit
 ```
 
 ---
@@ -54,94 +62,173 @@ pnpm add sluggit
 ## Quick Start
 
 ```typescript
-import { sluggit } from "sluggit";
+import sluggit, { uniqueSlug } from "sluggit";
 
-const slug = sluggit("Hello World!"); // Output: hello-world
+// Basic slug
+sluggit("Hello World!"); 
+// Output: "hello-world"
+
+// Unique slug against existing entries
+uniqueSlug("My Post", ["my-post", "my-post-1"]); 
+// Output: "my-post-2"
 ```
 
 ---
 
-## Usage
+## Usage & Examples
+
+### Basic Usage
 
 ```typescript
 import { sluggit } from "sluggit";
 
-// Basic usage
-sluggit("Hello World!"); // hello-world
+// Default behavior
+sluggit("Hello World!"); // "hello-world"
 
 // Custom separator
-sluggit("Hello World!", { separator: "_" }); // hello_world
+sluggit("Hello World!", { separator: "_" }); // "hello_world"
 
-// Preserve case
-sluggit("Hello World!", { lowercase: false }); // Hello-World
+// Preserve casing
+sluggit("Hello World!", { lowercase: false }); // "Hello-World"
 
 // Remove emojis
-sluggit("Hello 👋 World! 🌍"); // hello-world
+sluggit("Super Cool 🚀 Blog Post 😎"); // "super-cool-blog-post"
 
-// Handle accents
-sluggit("Hôtel Crémieux"); // hotel-cremieux
+// Accented characters
+sluggit("Café & Résumé"); // "cafe-and-resume"
+```
+
+### Unique Slug Generator (CMS / Database)
+
+Prevent duplicate slugs by passing a list or `Set` of existing slugs:
+
+```typescript
+import { uniqueSlug } from "sluggit";
+
+const existingSlugs = ["product", "product-1"];
+
+// Generates next available sequential slug
+const slug1 = uniqueSlug("Product", existingSlugs);
+// Output: "product-2"
+
+// Also accessible via sluggit.unique
+const slug2 = sluggit.unique("New Article", ["new-article"]);
+// Output: "new-article-1"
+```
+
+### Allowed Characters Whitelist (Paths & Files)
+
+Preserve specific characters such as `/` for URL/file paths or `.` for extensions:
+
+```typescript
+// Preserve slashes for URL paths
+sluggit("blog/2026/my first post", { allowedChars: "/" });
+// Output: "blog/2026/my-first-post"
+
+// Preserve file extensions
+sluggit("Annual Financial Report 2026.pdf", { allowedChars: "." });
+// Output: "annual-financial-report-2026.pdf"
+```
+
+### Locale Support (Umlauts & Accents)
+
+Apply language-specific transliteration rules using the `locale` option:
+
+```typescript
+// German (ä -> ae, ö -> oe, ü -> ue, ß -> ss)
+sluggit("Schöne Grüße über München", { locale: "de" });
+// Output: "schoene-gruesse-ueber-muenchen"
+
+// Danish / Norwegian (å -> aa, æ -> ae, ø -> oe)
+sluggit("København Blåbær", { locale: "da" });
+// Output: "koebenhavn-blaabaer"
+
+// Swedish (å -> aa, ä -> ae, ö -> oe)
+sluggit("Mörkö Räksmörgås", { locale: "sv" });
+// Output: "moerkoe-raeksmoergaas"
+```
+
+### Currency & Math Symbols
+
+Currencies and math symbols attached to numbers or words are intelligently transliterated:
+
+```typescript
+sluggit("Price: 100$");              // "price-100-dollar"
+sluggit("Save £25 on your order");   // "save-pound-25-on-your-order"
+sluggit("Special 50% discount");     // "special-50-percent-discount"
+sluggit("C++ Programming");          // "c-plus-plus-programming"
+sluggit("Contact me@domain.com");    // "contact-me-at-domain-com"
+```
+
+### Length Limiting (Word-Boundary Aware)
+
+Limit slug length without chopping words awkwardly:
+
+```typescript
+sluggit("The Quick Brown Fox Jumps Over", { maxLength: 15 });
+// Output: "the-quick-brown"
+
+// Preserves numeric tails (like years/IDs) when context is kept:
+sluggit("Quarterly Fiscal Report 2026", { maxLength: 20 });
+// Output: "quarterly-2026"
+```
+
+### Custom Replacements
+
+Override or define custom character substitutions:
+
+```typescript
+sluggit("Node.js & TypeScript", {
+  customReplacements: {
+    ".js": "-javascript",
+    "&": "and",
+  },
+});
+// Output: "node-javascript-and-typescript"
 ```
 
 ---
 
 ## API Reference
 
-### Function Signature
+### `sluggit(text, options?)`
 
-```typescript
-function sluggit(input: string, options?: SluggitOptions): string;
-```
+Converts input text to a URL-friendly slug.
 
-### Parameters
+- **Parameters**:
+  - `text` (`string`): Input text string.
+  - `options` (`SluggitOptions`, optional): Configuration options.
+- **Returns**: `string`
 
-- `input` (string): The string to convert to a slug
-- `options` (optional: SlugOptions): Configuration options
+### `uniqueSlug(text, existing, options?)`
 
-### Return Value
+Generates a collision-free slug by appending an incremental number suffix if a duplicate exists.
 
-- Returns a string containing the URL-friendly slug
-
----
-
-## Options
-
-The `SlugOptions` interface provides the following configuration options:
-
-```typescript
-interface SluggitOptions {
-  separator?: string; // Default: '-'
-  lowercase?: boolean; // Default: true
-  trim?: boolean; // Default: true
-  maxLength?: number; // Optional: max length of the slug
-  customReplacements?: Record<string, string>; // Optional mappings applied before slug generation
-  preserveNumbers?: boolean; // Default: true
-  removeTrailingDash?: boolean; // Default: false
-}
-```
-
-### Options Description
-
-- `separator`: Character to use between words (default: '-')
-- `lowercase`: Convert the output to lowercase (default: true)
-- `trim`: Remove leading and trailing separators (default: true)
-
-- `maxLength`: When provided, the function attempts to keep whole tokens, truncating only at token boundaries when possible. If a numeric tail (e.g., a year) is present and the token before it is included in the truncated result, the numeric tail will be appended.
-- `customReplacements`: A map of strings to replace prior to slug generation. Useful for mapping © → c, ™ → tm, & → and, etc.
-- `preserveNumbers`: Whether numbers should be preserved (default: true). Set to false to remove all digits.
-- `removeTrailingDash`: When true, strip trailing separators from the final slug.
+- **Parameters**:
+  - `text` (`string`): Input text string.
+  - `existing` (`string[] | Set<string>`): Existing slug entries.
+  - `options` (`SluggitOptions`, optional): Configuration options.
+- **Returns**: `string`
 
 ---
 
-## Examples
+## Options Reference
 
-Here are some example inputs and their corresponding outputs:
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `separator` | `string` | `"-"` | Character used to separate words. |
+| `lowercase` | `boolean` | `true` | Converts output to lowercase. |
+| `trim` | `boolean` | `true` | Removes leading and trailing separators. |
+| `maxLength` | `number` | `undefined` | Truncates slug to maximum length at word boundaries. |
+| `customReplacements`| `Record<string, string>` | `undefined` | Custom mapping of characters to replace. |
+| `preserveNumbers` | `boolean` | `true` | Set to `false` to remove all numeric digits. |
+| `removeTrailingDash`| `boolean` | `false` | Strips trailing separators from output. |
+| `allowedChars` | `string` | `""` | Additional characters to whitelist/preserve (e.g. `"/."`). |
+| `locale` | `string` | `undefined` | Language code for locale-specific transliterations (e.g. `'de'`, `'da'`, `'sv'`, `'tr'`). |
 
-| Input                   | Options                                        | Output                       |
-| ----------------------- | ---------------------------------------------- | ---------------------------- |
-| "Hello World!"          | default                                        | "hello-world"                |
-| "Hello_World!"          | { separator: '\_' }                            | "hello_world"                |
-| "Hello World!"          | { lowercase: false }                           | "Hello-World"                |
-| " Hello World! "        | { trim: true }                                 | "hello-world"                |
-| "Café & Résumé"         | { customReplacements: { "&": "and" }}          | "cafe-and-resume"            |
-| "Hello 👋 World! 🌍"    | default                                        | "hello-world"                |
-| "Product™ & Copyright©" | { customReplacements: { "™": "tm", "©": "c" }} | "product-tm-and-copyright-c" |
+---
+
+## License
+
+[MIT](LICENSE) © Misbahul Alam
+

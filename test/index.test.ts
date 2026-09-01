@@ -1,10 +1,15 @@
 import { describe, expect, test } from "vitest";
-import { sluggit } from "../src/index.js";
+import sluggitDefault, { sluggit, uniqueSlug } from "../src/index.js";
 
 describe("Sluggit Utility Tests", () => {
   describe("Basic Functionality", () => {
     test("converts basic text to lowercase slug", () => {
       expect(sluggit("Hello World!")).toBe("hello-world");
+    });
+
+    test("works via default import", () => {
+      expect(sluggitDefault("Hello World!")).toBe("hello-world");
+      expect(typeof sluggitDefault.unique).toBe("function");
     });
 
     test("removes emojis from text", () => {
@@ -147,6 +152,107 @@ describe("Sluggit Utility Tests", () => {
     });
   });
 
+  describe("Currency and Math Symbols", () => {
+    test("transliterates currency symbols attached to words/numbers", () => {
+      expect(sluggit("Price: 100$")).toBe("price-100-dollar");
+      expect(sluggit("Cost $50")).toBe("cost-dollar-50");
+      expect(sluggit("100 € discount")).toBe("100-euro-discount");
+      expect(sluggit("Save £25 now")).toBe("save-pound-25-now");
+      expect(sluggit("5000 ¥ item")).toBe("5000-yen-item");
+      expect(sluggit("100 ₹ coupon")).toBe("100-rupee-coupon");
+    });
+
+    test("transliterates percentages and math symbols", () => {
+      expect(sluggit("100% Guaranteed")).toBe("100-percent-guaranteed");
+      expect(sluggit("C++ Programming")).toBe("c-plus-plus-programming");
+      expect(sluggit("Contact me@domain.com")).toBe("contact-me-at-domain-com");
+    });
+  });
+
+  describe("Allowed Characters Whitelist", () => {
+    test("preserves forward slashes for path slugs", () => {
+      expect(sluggit("blog/2026/my first post", { allowedChars: "/" })).toBe(
+        "blog/2026/my-first-post",
+      );
+    });
+
+    test("preserves dots for file extensions", () => {
+      expect(sluggit("my awesome report.pdf", { allowedChars: "." })).toBe(
+        "my-awesome-report.pdf",
+      );
+    });
+
+    test("preserves multiple whitelisted characters", () => {
+      expect(sluggit("docs/v1.0/intro page.md", { allowedChars: "/." })).toBe(
+        "docs/v1.0/intro-page.md",
+      );
+    });
+  });
+
+  describe("Locale Support", () => {
+    test("handles German umlauts with locale 'de'", () => {
+      expect(sluggit("Schöne Grüße über München", { locale: "de" })).toBe(
+        "schoene-gruesse-ueber-muenchen",
+      );
+    });
+
+    test("handles Scandinavian characters with locale 'da'", () => {
+      expect(sluggit("København Blåbær", { locale: "da" })).toBe(
+        "koebenhavn-blaabaer",
+      );
+    });
+
+    test("handles Swedish characters with locale 'sv'", () => {
+      expect(sluggit("Mörkö Räksmörgås", { locale: "sv" })).toBe(
+        "moerkoe-raeksmoergaas",
+      );
+    });
+
+    test("handles Turkish characters with locale 'tr'", () => {
+      expect(sluggit("İstanbul Şehri Güneşi", { locale: "tr" })).toBe(
+        "istanbul-sehri-gunesi",
+      );
+    });
+  });
+
+  describe("Unique Slug Generator", () => {
+    test("returns base slug when no collisions exist", () => {
+      const existing = ["apple", "banana"];
+      expect(uniqueSlug("Orange", existing)).toBe("orange");
+    });
+
+    test("appends sequential numeric suffix on single collision", () => {
+      const existing = ["my-post"];
+      expect(uniqueSlug("My Post", existing)).toBe("my-post-1");
+    });
+
+    test("finds next available numeric index on multiple collisions", () => {
+      const existing = ["my-post", "my-post-1", "my-post-2"];
+      expect(uniqueSlug("My Post", existing)).toBe("my-post-3");
+    });
+
+    test("works with Set instances", () => {
+      const existingSet = new Set(["blog-post", "blog-post-1"]);
+      expect(uniqueSlug("Blog Post", existingSet)).toBe("blog-post-2");
+    });
+
+    test("works with custom separators and options", () => {
+      const existing = ["my_post", "my_post_1"];
+      expect(uniqueSlug("My Post", existing, { separator: "_" })).toBe(
+        "my_post_2",
+      );
+    });
+
+    test("is accessible via sluggit.unique", () => {
+      const existing = ["article"];
+      expect(sluggit.unique("Article", existing)).toBe("article-1");
+    });
+
+    test("returns empty string on empty input", () => {
+      expect(uniqueSlug("", ["a", "b"])).toBe("");
+    });
+  });
+
   describe("Edge Cases", () => {
     test("handles empty string", () => {
       expect(sluggit("")).toBe("");
@@ -162,6 +268,19 @@ describe("Sluggit Utility Tests", () => {
 
     test("handles string with only emojis", () => {
       expect(sluggit("🎉 🎊 🎈")).toBe("");
+    });
+
+    test("handles numeric inputs gracefully", () => {
+      expect(sluggit(12345 as unknown as string)).toBe("12345");
+    });
+
+    test("handles uppercase locale identifiers", () => {
+      expect(sluggit("Grüße", { locale: "DE" })).toBe("gruesse");
+    });
+
+    test("fills collision gaps in uniqueSlug", () => {
+      const existing = ["post", "post-2"];
+      expect(uniqueSlug("Post", existing)).toBe("post-1");
     });
   });
 

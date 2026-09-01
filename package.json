@@ -1,10 +1,27 @@
 {
   "name": "sluggit",
-  "version": "1.4.0",
-  "description": "A utility for generating slugs from text strings in TypeScript.",
+  "version": "2.0.0",
+  "description": "A lightweight and fast utility for generating URL-friendly slugs in TypeScript with unicode, locale, and uniqueness support.",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "homepage": "https://github.com/misbahul-alam/sluggit#readme",
+  "bugs": {
+    "url": "https://github.com/misbahul-alam/sluggit/issues"
+  },
   "repository": {
     "url": "git+https://github.com/misbahul-alam/sluggit.git",
     "type": "git"
@@ -13,7 +30,8 @@
     "build": "tsup && tsc --emitDeclarationOnly",
     "prepare": "npm run build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [
     "slug",
@@ -29,10 +47,11 @@
   "type": "module",
   "devDependencies": {
     "@types/node": "^26.4.0",
+    "@vitest/coverage-v8": "^4.1.11",
     "ts-node": "^10.9.2",
     "tsup": "^8.5.1",
-    "vitest": "^4.1.11",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
   },
   "allowScripts": {
     "esbuild@0.27.2": true

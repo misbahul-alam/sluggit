@@ -1,5 +1,12 @@
 import type { CustomReplacements } from "./replacements.js";
-import { defaultReplacements, transliterations } from "./replacements.js";
+import {
+  defaultReplacements,
+  transliterations,
+  localeReplacements,
+} from "./replacements.js";
+import { escapeRegex, collapseSeparators, hasLetterOrNumber } from "./utils.js";
+
+export type { CustomReplacements };
 
 export interface SluggitOptions {
   separator?: string;
@@ -9,66 +16,100 @@ export interface SluggitOptions {
   customReplacements?: CustomReplacements;
   preserveNumbers?: boolean;
   removeTrailingDash?: boolean;
+  allowedChars?: string;
+  locale?: string;
 }
 
-/**
- * Convert a string to a URL-friendly slug
- * @param text The string to convert to a slug
- * @param options Configuration options for slug generation
- * @returns A URL-friendly slug
- */
+const staticReplacementsMap: CustomReplacements = {
+  ...defaultReplacements,
+  ...transliterations,
+};
+
+const staticReplacementEntries: Array<[string, string]> = Object.entries(
+  staticReplacementsMap,
+).sort((a, b) => b[0].length - a[0].length);
+
+function applyEntries(
+  input: string,
+  entries: Array<[string, string]>,
+  separator: string,
+): string {
+  let slug = input;
+  for (const [key, value] of entries) {
+    const pattern = escapeRegex(key);
+    const keyIsSymbol = !/\p{L}/u.test(key) && !/\p{N}/u.test(key);
+    const valueHasLetters = /\p{L}/u.test(value);
+
+    if (keyIsSymbol && valueHasLetters) {
+      const symbolRegex = new RegExp(pattern, "giu");
+      slug = slug.replace(symbolRegex, (match, ...args) => {
+        const offset = args[args.length - 2] as number;
+        const before = slug.charAt(Math.max(0, offset - 1));
+        const after = slug.charAt(offset + match.length);
+        const beforeIsAlnum = /[\p{L}\p{N}]/u.test(before);
+        const afterIsAlnum = /[\p{L}\p{N}]/u.test(after);
+        const beforeIsSpace = /\s/.test(before);
+        const afterIsSpace = /\s/.test(after);
+
+        if (
+          !beforeIsAlnum &&
+          !afterIsAlnum &&
+          !beforeIsSpace &&
+          !afterIsSpace &&
+          before !== "" &&
+          after !== ""
+        ) {
+          return "";
+        }
+
+        const left =
+          (beforeIsAlnum || beforeIsSpace) && before ? separator : "";
+        const right = (afterIsAlnum || afterIsSpace) && after ? separator : "";
+        return `${left}${value}${right}`;
+      });
+    } else {
+      const regex = new RegExp(pattern, "giu");
+      slug = slug.replace(regex, value);
+    }
+  }
+  return slug;
+}
+
 export function sluggit(text: string, options: SluggitOptions = {}): string {
   const {
     separator = "-",
     lowercase = true,
     trim = true,
     maxLength,
-    customReplacements = {},
+    customReplacements,
     preserveNumbers = true,
     removeTrailingDash = false,
+    allowedChars = "",
+    locale,
   } = options;
+
   const hasSeparator = separator.length > 0;
+  let slug = text ? text.toString() : "";
+  if (!slug) return "";
 
-  const replacements = {
-    ...defaultReplacements,
-    ...transliterations,
-    ...customReplacements,
-  };
+  if (locale) {
+    const locMap = localeReplacements[locale.toLowerCase()];
+    if (locMap) {
+      const locEntries = Object.entries(locMap).sort(
+        (a, b) => b[0].length - a[0].length,
+      );
+      slug = applyEntries(slug, locEntries, separator);
+    }
+  }
 
-  let slug = text.toString();
+  if (customReplacements && Object.keys(customReplacements).length > 0) {
+    const customEntries = Object.entries(customReplacements).sort(
+      (a, b) => b[0].length - a[0].length,
+    );
+    slug = applyEntries(slug, customEntries, separator);
+  }
 
-  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-  const replacementEntries = Object.entries(replacements) as Array<
-    [string, string]
-  >;
-
-  replacementEntries
-    .sort((a, b) => b[0].length - a[0].length)
-    .forEach(([key, value]) => {
-      const pattern = escapeRegex(key);
-
-      const keyIsSymbol = !/\p{L}/u.test(key) && !/\p{N}/u.test(key);
-      const valueHasLetters = /\p{L}/u.test(value);
-      let regex: RegExp;
-      let replacement: string = value;
-      if (keyIsSymbol && valueHasLetters) {
-        const symbolRegex = new RegExp(pattern, "giu");
-        slug = slug.replace(symbolRegex, (match, ...args) => {
-          const offset = args[args.length - 2] as number;
-          const before = slug.charAt(Math.max(0, offset - 1));
-          const after = slug.charAt(offset + match.length);
-          const beforeIsAlnum = /[\p{L}\p{N}]/u.test(before);
-          const afterIsAlnum = /[\p{L}\p{N}]/u.test(after);
-          const left = beforeIsAlnum ? separator : "";
-          const right = afterIsAlnum ? separator : "";
-          return `${left}${value}${right}`;
-        });
-      } else {
-        regex = new RegExp(pattern, "giu");
-        slug = slug.replace(regex, replacement);
-      }
-    });
+  slug = applyEntries(slug, staticReplacementEntries, separator);
 
   slug = slug
     .normalize("NFD")
@@ -78,17 +119,15 @@ export function sluggit(text: string, options: SluggitOptions = {}): string {
     .replace(/[\u{1F680}-\u{1F6FF}]/gu, "")
     .replace(/[\u{2600}-\u{26FF}]/gu, "");
 
-  const alphanumericPattern = preserveNumbers ? "[^a-zA-Z0-9]" : "[^a-zA-Z]";
-  slug = slug.replace(new RegExp(alphanumericPattern + "+", "g"), separator);
+  const allowed = allowedChars ? escapeRegex(allowedChars) : "";
+  const alphanumericPattern = preserveNumbers
+    ? `[^a-zA-Z0-9${allowed}]`
+    : `[^a-zA-Z${allowed}]`;
+  slug = slug.replace(new RegExp(`${alphanumericPattern}+`, "g"), separator);
 
   if (trim && hasSeparator) {
-    slug = slug.replace(
-      new RegExp(
-        `^${escapeRegex(separator)}+|${escapeRegex(separator)}+$`,
-        "g",
-      ),
-      "",
-    );
+    const escapedSep = escapeRegex(separator);
+    slug = slug.replace(new RegExp(`^${escapedSep}+|${escapedSep}+$`, "g"), "");
   }
 
   if (lowercase) {
@@ -96,7 +135,8 @@ export function sluggit(text: string, options: SluggitOptions = {}): string {
   }
 
   if (removeTrailingDash && hasSeparator) {
-    slug = slug.replace(new RegExp(`${escapeRegex(separator)}+$`), "");
+    const escapedSep = escapeRegex(separator);
+    slug = slug.replace(new RegExp(`${escapedSep}+$`), "");
   }
 
   if (maxLength && slug.length > maxLength) {
@@ -146,13 +186,41 @@ export function sluggit(text: string, options: SluggitOptions = {}): string {
   }
 
   if (hasSeparator) {
-    slug = slug.replace(
-      new RegExp(`${escapeRegex(separator)}{2,}`, "g"),
-      separator,
-    );
+    slug = collapseSeparators(slug, separator);
   }
 
-  if (!/[\p{L}\p{N}]/u.test(slug)) return "";
+  if (!hasLetterOrNumber(slug) && (!allowedChars || !slug.trim())) {
+    return "";
+  }
 
   return slug;
 }
+
+export function uniqueSlug(
+  text: string,
+  existing: string[] | Set<string>,
+  options: SluggitOptions = {},
+): string {
+  const baseSlug = sluggit(text, options);
+  if (!baseSlug) return "";
+
+  const existingSet = existing instanceof Set ? existing : new Set(existing);
+  if (!existingSet.has(baseSlug)) {
+    return baseSlug;
+  }
+
+  const separator = options.separator ?? "-";
+  let count = 1;
+  let candidate = `${baseSlug}${separator}${count}`;
+
+  while (existingSet.has(candidate)) {
+    count++;
+    candidate = `${baseSlug}${separator}${count}`;
+  }
+
+  return candidate;
+}
+
+sluggit.unique = uniqueSlug;
+
+export default sluggit;

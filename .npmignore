@@ -1,7 +1,10 @@
 src/
 test/
+coverage/
 .github/
 .vscode/
+.idea/
 tsconfig.json
 vitest.config.ts
 tsup.config.ts
+*.log
